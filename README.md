@@ -221,4 +221,4 @@ For questions, issues, or feature requests, please create an issue in the projec
 
 ---
 
-*Generated with ❤️ for realistic ice cream shop data simulation* 
+*Generated with ❤️ for realistic ice cream shop data simulation for the WeatherWatchers group on Qlik Hackathon*  
