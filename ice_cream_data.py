@@ -391,24 +391,38 @@ def generate_yearly_orders(cursor, schema, count, year=None, weather_data=None):
         daily_orders.append((current_date, daily_weight, temperature))
         total_weight += daily_weight
     
-    # Generate orders for each day based on calculated weights
-    orders_generated = 0
-    for current_date, daily_weight, temperature in daily_orders:
+    # Determine order counts per day while keeping total close to requested count
+    day_counts = []
+    for _, daily_weight, _ in daily_orders:
         if total_weight > 0:
-            # Calculate number of orders for this day
-            day_orders = int((daily_weight / total_weight) * count)
-            
-            # Add some randomness to avoid too predictable patterns
-            if random.random() < 0.3:  # 30% chance of slight variation
-                day_orders += random.randint(-2, 3)
-            
-            day_orders = max(0, day_orders)  # Ensure non-negative
-            
-            # Generate orders for this day
-            if day_orders > 0:
-                stats = generate_detailed_orders(cursor, schema, day_orders, current_date, temperature)
-                orders_generated += stats["orders"]
-    
+            dc = int((daily_weight / total_weight) * count)
+            if random.random() < 0.3:  # slight randomness
+                dc += random.randint(-2, 3)
+            dc = max(0, dc)
+        else:
+            dc = 0
+        day_counts.append(dc)
+
+    # Adjust to exactly match requested total count
+    diff = count - sum(day_counts)
+    i = 0
+    while diff != 0 and day_counts:
+        idx = i % len(day_counts)
+        if diff > 0:
+            day_counts[idx] += 1
+            diff -= 1
+        elif day_counts[idx] > 0:
+            day_counts[idx] -= 1
+            diff += 1
+        i += 1
+
+    # Generate orders based on final day counts
+    orders_generated = 0
+    for (current_date, _, temperature), dc in zip(daily_orders, day_counts):
+        if dc > 0:
+            stats = generate_detailed_orders(cursor, schema, dc, current_date, temperature)
+            orders_generated += stats["orders"]
+
     return orders_generated
 
 
